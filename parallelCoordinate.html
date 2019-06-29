@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<script src="//d3js.org/d3.v3.min.js"></script>
+<script src="http://libs.baidu.com/jquery/1.9.0/jquery.js"></script>
+<script type="text/javascript"></script>
+<style>
+
+svg {
+  font: 10px sans-serif;
+}
+
+.background path {
+  fill: none;
+  stroke: #ccc;
+  stroke-opacity: .4;
+  shape-rendering: crispEdges;
+}
+
+.foreground path {
+  fill: none;
+  stroke: steelblue;
+  stroke-opacity: .7;
+}
+
+.brush .extent {
+  fill-opacity: .3;
+  stroke: #d6616b;
+  shape-rendering: crispEdges;
+}
+
+.axis line, .axis path {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
+
+.axis text {
+  text-shadow: 0 1px 0 #fff;
+}
+
+ body { 
+    font: 150%/1.6 sans-serif;} 
+    input[type="checkbox"] {
+        position: absolute;
+        clip: rect(0, 0, 0, 0);
+    }
+ input[type="checkbox"]+label::before {
+        content: '\a0';
+        display: inline-block;
+        vertical-align: .2em;
+        width: .8em;
+        height: .8em;
+        margin-right: .2em;
+        border-radius: .2em;
+        background: silver;
+        text-indent: .15em;
+        line-height: .65;
+        background-color: #ccc;
+    }
+
+    input[type="checkbox"]:checked+label::before {
+        content: '\2713';
+        background: yellowgreen;
+    }
+
+    input[type="checkbox"]:focus+label::before {
+        box-shadow: 0 0 .1em .1em #58a;
+        background-color: pink;
+    }
+
+    input[type="checkbox"]:disabled+label::before {
+        background: gray;
+        box-shadow: none;
+        color: #555;
+        cursor: not-allowed;
+    }
+</style>
+
+
+<body>
+  <!--定义parallelCoordinate图例和需要提交的input属性列数据，通过表单form提交数据-->
+<form name="checkboxform"  action=""> 
+<input type="checkbox" id="CRIM" name="box" value="CRIM"  />
+<label for="CRIM">CRIM人均犯罪率</label>
+<input type="checkbox" id="ZN" name="box" value="ZN"  />
+<label for="ZN">ZN住宅用地所占的比例</label>
+<input type="checkbox" id="RAD" name="box" value="RAD"  />
+<label for="RAD">RAD便利指数</label>
+
+<input type="checkbox" id="CHAS" name="box" value="CHAS"  />
+<label for="CHAS">CHAS查理斯河虚拟变量</label>
+<input type="checkbox" id="NOX" name="box" value="NOX" />
+<label for="NOX">NOX环保指数</label>
+<input type="checkbox" id="RM" name="box" value="RM"  />
+<label for="RM">RM每栋住宅的房间数</label>
+<input type="checkbox" id="AGE" name="box" value="AGE"  />
+<label for="AGE">AGE自住单位的比例</label>
+<br/>
+<input type="checkbox" id="DIS" name="box" value="DIS" />
+<label for="DIS">DIS加权距离</label>
+<input type="checkbox" id="INDUS" name="box" value="INDUS"  />
+<label for="INDUS">INDUS非零售商用土地的比例</label>
+<input type="checkbox" id="TAX" name="box" value="TAS"  />
+<label for="TAX">TAS不动产税率</label>
+<input type="checkbox" id="PTRATIO" name="box" value="PTRATIO"  />
+<label for="PTRATIO">PTRATIO城镇师生比例</label>
+<input type="checkbox" id="B" name="box" value="B"  />
+<label for="B">B黑人的比例</label>
+<input type="checkbox" id="LSTAT" name="box" value="LSTAT"  />
+<label for="LSTAT">LSTAT房东低收入百分比</label>
+<input type="checkbox" id="MEDV" name="box" value="MEDV"  />
+<label for="MEDV">MEDV平均房价</label>
+<!--按钮，选取属性里之后，点击按钮提交选中的属性列信息，刷新页面-->
+<input type="button" onclick="update() " value="刷新"  autofocus/><!--自动获得焦点  -->
+</form> 
+<div></div>
+<script>
+
+
+function update()
+{
+  var data=window.$("svg");//获取当前页面的整个svg
+  data.remove();//删除上个svg,用更新的数据重画svg
+  //调用parallelCoordinate画图函数
+  ReadAndDraw(true);
+}
+
+//根据勾选的属性列条件来选择画散点图的数据
+function DrawCircleData(data,conditions)
+{
+        var dataCRIM = [];//城镇人均犯罪率；
+        var dataZN = [];
+        var dataINDUS = [];
+        var dataCHAS = [];
+        var dataNOX = [];//一氧化氮浓度（环保指数）
+        var dataRM = [];
+        var dataAGE = [];
+        var dataDIS = [];//距离波士顿就业中心区域的加权距离。
+        var dataRAD = [];//距离高速公路的便利指数
+        var dataTAS = [];
+        var dataPTRATIO = [];//城镇师生比例
+        var dataB = [];//城镇中黑人的比例
+        var dataLSTAT = [];//城镇中黑人的比例
+        var dataMEDV = [];//自住房的平均房价，以千美元计
+       
+  for(var i = 0; i < data.length;i++)
+    {
+        //根据属性列把数据分成不同的数据集
+        dataCRIM.push([data[i]["MEDV"],data[i]["CRIM"]]);
+        dataZN.push([data[i]["MEDV"],data[i]["ZN"]]);
+        dataINDUS.push([data[i]["MEDV"],data[i]["INDUS"]]);
+        dataCHAS.push([data[i]["MEDV"],data[i]["CHAS"]]);
+        dataNOX.push([data[i]["MEDV"],data[i]["NOX"]]);
+        dataRM.push([data[i]["MEDV"],data[i]["RM"]]);
+        dataAGE.push([data[i]["MEDV"],data[i]["AGE"]]);
+        dataDIS.push([data[i]["MEDV"],data[i]["DIS"]]);
+        dataRAD.push([data[i]["MEDV"],data[i]["RAD"]]);
+        dataTAS.push([data[i]["MEDV"],data[i]["TAS"]]);
+        dataPTRATIO.push([data[i]["MEDV"] ,data[i]["PTRATIO"] ]);
+        dataB.push([data[i]["MEDV"] ,data[i]["B"] ]);
+        dataLSTAT.push([data[i]["MEDV"],data[i]["LSTAT"]]);
+    }
+    //根据属性列条件来选择画散点图的数据，并调用数据画散点图
+    if(conditions[0] == "CRIM")
+        DrawCircle(dataCRIM,0);
+    else if(conditions[0] == "ZN")
+        DrawCircle(dataZN,1);
+    else if(conditions[0] == "INDUS")
+        DrawCircle(dataINDUS,2);
+    else if(conditions[0] == "CHAS")
+        DrawCircle(dataCHAS,3);
+    else if(conditions[0] == "NOX")
+        DrawCircle(dataNOX,4);
+    else if(conditions[0] == "RM")
+        DrawCircle(dataRM,5);
+    else if(conditions[0] == "AGE")
+        DrawCircle(dataAGE,6);
+    else if(conditions[0] == "DIS")
+        DrawCircle(dataDIS,7);
+    else  if(conditions[0] == "RAD")
+        DrawCircle(dataRAD,8);
+    else if(conditions[0] == "TAS")
+        DrawCircle(dataTAS,9);
+    else  if(conditions[0] == "PTRATIO")
+        DrawCircle(dataPTRATIO,10);
+    else if(conditions[0] == "B")
+        DrawCircle(dataB,11);
+    else 
+        DrawCircle(dataLSTAT,12);
+
+
+}
+
+//画散点图的函数
+function DrawCircle(dataset,index)
+{
+    let height = 500;
+    let  width = 600;
+    let padding ={left:20,right:40,top:20,bottom:20};
+   
+   //散点图的图标，index用来选取图标
+    var title=[["波士顿房价与犯罪率关系图","犯罪率"],
+              ["波士顿房价与住宅用地所占的比例关系图","住宅用地比例"],
+              ["波士顿房价与非商用土地比例关系图","非商用土地比例"],
+              ["波士顿房价与查理斯河虚拟变量关系图","查理斯河虚拟变量"],
+              ["波士顿房价与环保指数关系图","环保指数"],
+              ["波士顿房价与住宅的房间数关系图","住宅的房间数"],
+              ["波士顿房价与自住单位比例关系图","自住单位比例"],
+              ["波士顿房价与加权距离关系图","加权距离"],
+              ["波士顿房价与便利指数关系图","便利指数"],
+              ["波士顿房价与不动产税率关系图","不动产税率"],
+              ["波士顿房价与师生比率关系图","师生比率"],
+              ["波士顿房价与黑人比例关系图","黑人比例"],
+              ["波士顿房价与房东低收入百分比关系图","房东低收入百分比"],
+               ]; 
+      //画布的定义
+     var SVG = d3.select("body")
+    .append("svg")
+    .attr("height",height)
+    .attr("width",width);   
+       
+//定义画布的背景
+     SVG.append("g")
+    .append("rect")
+    .attr("x",0)
+    .attr("y",0)
+    .attr("width",width)
+    .attr("height",height)
+    .style("fill","#FFF")
+    .style("stroke-width",2)
+    .style("stroke","#E7E7E7");
+
+         //X轴比例尺的定义
+         var xmax = 0;
+         var xmin = 9999;
+         var ymax = 0;
+         var ymin = 9999;
+         //csv读出来的数据是字符串，需要转换成数字
+         for (var i = 0; i < dataset.length;i++)
+         {
+              if(xmax < parseFloat(dataset[i][0]))
+              {
+                xmax = parseFloat(dataset[i][0]);
+              }
+              if(xmin >parseFloat(dataset[i][0]))
+              {
+                xmin = parseFloat(dataset[i][0]);
+              }
+              if(ymax < parseFloat(dataset[i][1]))
+              {
+                ymax = parseFloat(dataset[i][1]);
+              }
+             if(ymin > parseFloat(dataset[i][1]))
+              {
+                ymin = parseFloat(dataset[i][1]);
+              }
+
+         }
+         var srange = parseFloat(padding.left)  ;
+         var xScale = d3.scale.linear()
+         .domain([xmin,xmax])
+         .range([padding.left,width - padding.left-padding.right]);
+
+         //Y轴比例尺的定义
+         var yScale = d3.scale.linear()
+         .domain([ymin,ymax])
+         .range([padding.bottom,height - padding.bottom-padding.top]);
+
+         console.log(dataset);
+         console.log(ymin);
+         console.log(ymax);
+         //X轴坐标定义
+         var xAxis = d3.svg.axis()
+         .scale(xScale)
+         .orient("bottom");
+
+         //Y轴坐标定义
+         var yAxis = d3.svg.axis()
+         .scale(yScale)
+         .orient("left");
+        
+         var circle  = SVG.selectAll("circle")
+                          .data(dataset)
+                          .enter()
+                          .append("circle")
+                          .attr("fill","steelblue")
+                          .attr("cx",function(d){
+                            return padding.left + xScale(d[0]);
+                            //设置散点的x值，与x坐标相对应
+                          })
+                          .attr("cy",function(d){
+                            return   padding.bottom + yScale(d[1]);
+                            //设置散点的y值，与y坐标相对应
+                          })
+                          .attr("r",5)//散点的半径
+                          .on("mouseover",function(d){
+                            //鼠标悬浮散点变yellow
+                             d3.select(this)
+                             .attr("fill","yellow")
+                             .text(d[0].toFixed(2) + ","+d[1].toFixed(2));
+                              })
+                           .on("mouseout",function(d){
+                             //鼠标离开散点变回原来的颜色并动画过度500ms
+                              d3.select(this)
+                               .transition()
+                               .duration(500)
+                               .attr("fill","steelblue");
+                              });
+            
+    
+                          
+          //加入x坐标
+          SVG.append("g")
+          .attr("transform","translate("+padding.left+","+(height- padding.bottom)+")")
+          .attr("class","axis")
+          .call(xAxis);
+          
+          //加入y坐标
+           SVG.append("g")
+          .attr("transform","translate("+padding.left+","+ padding.top+")")
+          .attr("class","axis")
+          .call(yAxis);
+         
+
+          //添加标题
+          SVG.append("g")
+            .append("text")
+            .text(title[index][0])
+            .attr("class","title")
+            .attr("x",width/2)
+            .attr("fill", "steelblue")
+            .attr("y",30);
+console.log(index);
+             SVG.append("g").attr("class", "axis")
+            .attr("transform", "translate(" + padding.left + "," + (height - padding.bottom) + ")").call(xAxis)
+            .append("g").append("text").text("房价(1000$/平)").attr("fill", "steelblue").attr("dx", "50em").attr("dy", "1em");
+        SVG.append("g").attr("class", "axis")
+            .attr("transform", "translate(" + padding.left + "," + padding.top + ")").call(yAxis)
+            .append("g").append("text").text(title[index][1]).attr("fill", "steelblue").attr("dx", "1em").attr("dy", "1em");
+             
+         
+
+}
+//parallelCoordinate画图函数
+function ReadAndDraw(value){
+  var checkedValues = new Array();
+  //获取提交的数据，并存储在checkedValues里
+    $('input[name="box"]:checked').each(function(){
+            checkedValues.push($(this).val());
+              // console.log($(this).val());
+    });
+
+ 
+ var m = [30, 10, 10, 10],
+    w = 900 - m[1] - m[3],
+    h = 500 - m[0] - m[2];
+
+var x = d3.scale.ordinal().rangePoints([0, w], .5),
+    y = {};
+
+var line = d3.svg.line(),
+    axis = d3.svg.axis().orient("left"),
+    background,
+    foreground;
+//创建画布
+var svg = d3.select("body").append("svg")
+    .attr("width", w + m[1] + m[3])
+    .attr("height", h + m[0] + m[2])
+  .append("g")
+    .attr("transform", "translate(" + m[3] + "," + m[0] + ")");
+
+       
+        
+   //通过到d3.csv()读取数据集
+d3.csv("HousingPrice.csv", function(error, dataset) {
+  if (error) throw error;
+  
+
+   var attributes = ["CRIM","ZN","INDUS","CHAS","NOX","RM","AGE","DIS","RAD","TAS","PTRATIO","B","LSTAT","MEDV"]
+   //flage 是判断是否选择属性列的在一个标致，如果为true（通过点击刷新按钮控制），则选择想要的属性列显示，默认为false，
+   //显示全部属性列
+   var flage = value;
+   if(flage == true)
+   {
+      for(var i = 0 ; i < attributes.length;i++)
+   {
+      for(var j =0 ;j < checkedValues.length;j++)
+      {
+        if(attributes[i] == checkedValues[j])
+          attributes[i] = "0";
+      }
+   }
+    console.log(checkedValues);
+    DrawCircleData(dataset,checkedValues);//调用画散点图的函数画散点图
+   //通过提交的数据checkedValues筛选数据集中被选中的属性列domain
+    x.domain(dimensions = d3.keys(dataset[0]).filter(function(d) {
+    return d != attributes[0]  &&  d!= attributes[1] && d != attributes[2]  &&d != attributes[3]  &&
+    d != attributes[4]  &&d != attributes[5]  &&d != attributes[6]  &&d != attributes[7]  &&d != attributes[8]  &&
+    d != attributes[9]  &&d != attributes[10]  &&d != attributes[11]  &&d != attributes[12]  &&
+     (y[d] = d3.scale.linear()
+        .domain(d3.extent(dataset, function(p) { return +p[d]; }))
+        .range([h, 0]));
+  }));
+   
+   }
+   else
+   {//flage为false,默认显示数据集的全部属性里
+     x.domain(dimensions = d3.keys(dataset[0]).filter(function(d) {
+    return (y[d] = d3.scale.linear()
+        .domain(d3.extent(dataset, function(p) { return +p[d]; }))
+        .range([h, 0]));
+  }));
+
+    }
+  
+
+  // 设置灰色的背景
+  background = svg.append("g")
+      .attr("class", "background")
+    .selectAll("path")
+      .data(dataset)
+    .enter().append("path")
+      .attr("d", path);
+
+  // 设置选中的线条显示蓝色
+  foreground = svg.append("g")
+      .attr("class", "foreground")
+    .selectAll("path")
+      .data(dataset)
+    .enter().append("path")
+      .attr("d", path);
+
+  // 添加每个属性列的数据
+  var g = svg.selectAll(".dimension")
+      .data(dimensions)
+    .enter().append("g")
+      .attr("class", "dimension")
+      .attr("transform", function(d) { return "translate(" + x(d) + ")"; });
+
+  // 添加属性列的title和坐标
+  g.append("g")
+      .attr("class", "axis")
+      .each(function(d) { d3.select(this).call(axis.scale(y[d])); })
+    .append("text")
+      .attr("text-anchor", "middle")
+      .attr("y", -9)
+      .text(String);
+
+  // 为每个属性列添加刷子
+  g.append("g")
+      .attr("class", "brush")
+      .each(function(d) { d3.select(this).call(y[d].brush = d3.svg.brush().y(y[d]).on("brush", brush)); })
+    .selectAll("rect")
+      .attr("x", -8)
+      .attr("width", 16);
+});
+
+
+// 返回画线的path
+function path(d) {
+  return line(dimensions.map(function(p) { return [x(p), y[p](d[p])]; }));
+}
+
+
+//刷取事件，显示刷取的线条
+function brush() {
+  var actives = dimensions.filter(function(p) { return !y[p].brush.empty(); }),
+      extents = actives.map(function(p) { return y[p].brush.extent(); });
+    //获取刷取部分的最大最小值并把该部分的数据线高亮显示
+  foreground.style("display", function(d) {
+    return actives.every(function(p, i) {
+      return extents[i][0] <= d[p] && d[p] <= extents[i][1];
+    }) ? null : "none";
+  });
+}
+}
+//网页加载的时候默认显示全部属性列
+ReadAndDraw(false);
+</script>
+</body>
+
